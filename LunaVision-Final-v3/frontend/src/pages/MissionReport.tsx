@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, FileText, ChevronLeft, Map as MapIcon, Target, Activity, ShieldAlert, Route as RouteIcon, Info, Database } from 'lucide-react';
+import { Download, FileText, ChevronLeft, Map as MapIcon, Target, Activity, ShieldAlert, Route as RouteIcon, Database } from 'lucide-react';
 import { useMission } from '../context/MissionContext';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
