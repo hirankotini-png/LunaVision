@@ -31,7 +31,7 @@ export default function MissionReport() {
     setIsGenerating(true);
     const element = reportRef.current;
     if (element) {
-      const opt = {
+      const opt: any = {
         margin: [10, 10],
         filename: 'LunaVision-Mission-Report.pdf',
         image: { type: 'jpeg', quality: 1.0 },

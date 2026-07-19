@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileImage, Loader2, CheckCircle2 } from 'lucide-react';
+import { Upload, FileImage, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { useMission } from '../context/MissionContext';
 

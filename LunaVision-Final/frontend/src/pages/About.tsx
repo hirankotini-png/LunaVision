@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Rocket, Code } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 
 export default function About() {
   return (
