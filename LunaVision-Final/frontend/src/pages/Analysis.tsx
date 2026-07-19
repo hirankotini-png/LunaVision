@@ -93,7 +93,8 @@ export default function Analysis() {
       setTimeout(() => setLoadingText("Optimizing energy..."), 1500);
       setTimeout(() => setLoadingText("Generating mission report..."), 3000);
       
-      const response = await fetch('http://localhost:8000/api/plan_routes', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/plan_routes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

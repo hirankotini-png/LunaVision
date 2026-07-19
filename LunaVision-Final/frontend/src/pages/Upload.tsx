@@ -72,7 +72,8 @@ export default function UploadPage() {
     formData.append('file', file);
     
     try {
-      const response = await axios.post('http://localhost:8000/api/analyse', formData, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${apiUrl}/api/analyse`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setAnalysisResult(response.data);

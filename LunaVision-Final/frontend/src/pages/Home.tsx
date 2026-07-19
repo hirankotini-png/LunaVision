@@ -10,7 +10,8 @@ export default function Home() {
   const [backendHealth, setBackendHealth] = useState({ status: 'Connecting...', ai_available: false });
 
   useEffect(() => {
-    axios.get('http://localhost:8000/api/health')
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    axios.get(`${apiUrl}/api/health`)
       .then(res => setBackendHealth(res.data))
       .catch(() => setBackendHealth({ status: 'OFFLINE', ai_available: false }));
   }, []);

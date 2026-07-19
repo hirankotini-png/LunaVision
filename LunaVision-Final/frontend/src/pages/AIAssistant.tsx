@@ -36,7 +36,8 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/chat', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${apiUrl}/api/chat`, {
         messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: userMsg }],
         context: analysisResult ? {
           safety_score: analysisResult.safety_score,
