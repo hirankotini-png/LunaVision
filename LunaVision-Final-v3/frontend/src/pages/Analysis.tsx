@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Map, AlertTriangle, Crosshair, ArrowRight, ShieldAlert, Route as RouteIcon, Zap, Clock, Navigation, Loader2, Target, CheckCircle, Activity, Info } from 'lucide-react';
+import { Map, AlertTriangle, Crosshair, ShieldAlert, Route as RouteIcon, Navigation, Loader2, Target, CheckCircle, Activity, Info } from 'lucide-react';
 import { useMission } from '../context/MissionContext';
 
 export default function Analysis() {
