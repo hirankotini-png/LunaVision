@@ -1,0 +1,35 @@
+import os
+from dotenv import load_dotenv
+
+# Load env before any services or routers are imported
+load_dotenv()
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from api.routes import router
+from contextlib import asynccontextmanager
+from services.vision import vision_model
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load AI model once during server startup
+    vision_model.load_model()
+    yield
+    # Clean up on shutdown
+
+app = FastAPI(title="LunaVision AI", description="Lunar surface analysis API", version="1.0.0", lifespan=lifespan)
+
+# Setup CORS to allow frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(router, prefix="/api")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
