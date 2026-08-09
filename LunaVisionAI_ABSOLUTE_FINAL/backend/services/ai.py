@@ -31,6 +31,8 @@ class GeminiClient:
                 f"3 viable A* navigation paths (Optimal, Energy Efficient, Fastest) have been plotted. (Please add GEMINI_API_KEY to .env to enable AI reasoning)"
             )
             
+        genai.configure(api_key=api_key)
+            
         prompt = (
             "You are LunaVision AI, a NASA/ISRO mission-control analyst.\n"
             "Based on the following deterministic computer-vision metrics from a lunar surface scan, "
@@ -68,6 +70,8 @@ class GeminiClient:
                 "Please proceed with the mission plan or retry your transmission shortly. (Requires GEMINI_API_KEY in .env)"
             )
             
+        genai.configure(api_key=api_key)
+            
         system_prompt = (
             "You are LunaVision AI, a NASA/ISRO style mission-control AI assistant. "
             "You help analyze lunar surfaces and explain mission readiness to planners. "
@@ -100,6 +104,8 @@ class GeminiClient:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             return f"# Mission Report\n\nAI generation unavailable (Missing API Key). Fallback report:\n\n" + str(analysis_result_dict)
+            
+        genai.configure(api_key=api_key)
             
         prompt = (
             "Generate a formal NASA-style mission readiness report in markdown format. "
