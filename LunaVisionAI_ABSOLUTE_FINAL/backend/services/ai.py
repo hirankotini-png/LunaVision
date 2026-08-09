@@ -6,8 +6,8 @@ import google.generativeai as genai
 from models.schemas import ChatMessage
 
 # Model constants
-TEXT_MODEL = "gemini-1.5-flash-latest"
-VISION_MODEL = "gemini-1.5-flash-latest"
+TEXT_MODEL = "gemini-flash-latest"
+VISION_MODEL = "gemini-flash-latest"
 
 class GeminiClient:
     _instance = None
