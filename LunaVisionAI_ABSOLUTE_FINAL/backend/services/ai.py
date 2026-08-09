@@ -6,8 +6,8 @@ import google.generativeai as genai
 from models.schemas import ChatMessage
 
 # Model constants — using free-tier model
-TEXT_MODEL = "gemini-flash-latest"
-VISION_MODEL = "gemini-flash-latest"
+TEXT_MODEL = "gemini-1.5-flash"
+VISION_MODEL = "gemini-1.5-flash"
 
 class GeminiClient:
     _instance = None
@@ -79,6 +79,10 @@ class GeminiClient:
         formatted_msgs = []
         for msg in user_messages:
             formatted_msgs.append({"role": "user" if msg.role == "user" else "model", "parts": [msg.content]})
+
+        # Gemini API requires the first message in the history to be from the user
+        if formatted_msgs and formatted_msgs[0]["role"] == "model":
+            formatted_msgs.insert(0, {"role": "user", "parts": ["Initiate diagnostic session."]})
 
         try:
             model = genai.GenerativeModel(TEXT_MODEL, system_instruction=system_prompt)
