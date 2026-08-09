@@ -214,12 +214,12 @@ export default function MissionReport() {
                     {statusText}
                   </h2>
                 </div>
-                <div className="flex gap-8 mt-6 bg-black/10 dark:bg-white/5 p-4 rounded-xl border border-[var(--glass-border)] w-fit backdrop-blur-sm">
+                <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 bg-black/10 dark:bg-white/5 p-4 rounded-xl border border-[var(--glass-border)] w-fit backdrop-blur-sm">
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Health Score</p>
                     <p className="text-3xl font-mono font-bold text-[var(--text-base)]">{analysisResult.safety_score}<span className="text-lg text-gray-500">/100</span></p>
                   </div>
-                  <div className="w-px bg-[var(--glass-border)]"></div>
+                  <div className="hidden sm:block w-px bg-[var(--glass-border)]"></div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">AI Confidence</p>
                     <p className="text-3xl font-mono font-bold text-[var(--text-base)]">{analysisResult.landing_confidence}%</p>

@@ -111,6 +111,15 @@ export default function Analysis() {
     setComparePosition(x);
   };
 
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!compareMode || !containerRef.current || e.touches.length === 0) return;
+    // Prevent scrolling when using scrubber
+    const rect = containerRef.current.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
+    setComparePosition(x);
+  };
+
   const handleGenerateMission = async () => {
     if (!analysisResult || !targetCoordinate || isPlanning) return;
     
@@ -282,8 +291,9 @@ export default function Analysis() {
 
             <div 
               ref={containerRef}
-              className="relative rounded-[1.75rem] overflow-hidden bg-black w-full h-full flex items-center justify-center border border-[var(--glass-border)] z-10"
+              className="relative rounded-[1.75rem] overflow-hidden bg-black w-full h-full flex items-center justify-center border border-[var(--glass-border)] z-10 touch-none"
               onMouseMove={handleMouseMove}
+              onTouchMove={handleTouchMove}
               onClick={handleImageClick}
               style={{ cursor: compareMode ? 'ew-resize' : isPlanning ? 'wait' : 'crosshair' }}
             >

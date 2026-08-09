@@ -55,6 +55,53 @@ export default function UploadPage() {
     }
   }, [setOriginalImage]);
 
+  const compressImage = async (imageFile: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(imageFile);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIM = 800;
+          let { width, height } = img;
+          
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height *= MAX_DIM / width;
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width *= MAX_DIM / height;
+              height = MAX_DIM;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressed = new File([blob], imageFile.name.replace(/\.[^/.]+$/, "") + "_compressed.jpg", {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressed);
+            } else {
+              resolve(imageFile);
+            }
+          }, 'image/jpeg', 0.8); // 80% quality JPEG
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': [] },
@@ -73,10 +120,11 @@ export default function UploadPage() {
     setIsAnalyzing(true);
     setProgressStep(0);
     
-    const formData = new FormData();
-    formData.append('file', file);
-    
     try {
+      const compressedFile = await compressImage(file);
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await axios.post(`${apiUrl}/api/analyse`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -120,7 +168,7 @@ export default function UploadPage() {
             <div className="absolute inset-0 bg-cyan-500/10 z-0 animate-pulse"></div>
           )}
 
-          <div className="relative z-20 p-12 flex flex-col items-center justify-center min-h-[400px]">
+          <div className="relative z-20 p-6 md:p-12 flex flex-col items-center justify-center min-h-[300px] md:min-h-[400px]">
             <input {...getInputProps()} />
             
             <AnimatePresence mode="wait">
