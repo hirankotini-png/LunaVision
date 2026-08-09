@@ -95,9 +95,8 @@ class GeminiClient:
         except Exception as e:
             print(f"[{time.strftime('%X')}] Gemini request FAILED. Error: {e}", flush=True)
             return (
-                "Mission Control Acknowledged. We are currently experiencing high latency with the deep-space communications network. "
-                "However, our deterministic telemetry confirms the landing zone safety parameters are within acceptable thresholds. "
-                "Please proceed with the mission plan or retry your transmission shortly."
+                f"Mission Control AI Offline. Diagnostic Error: {str(e)}\n\n"
+                "Please verify your GEMINI_API_KEY is correct and active."
             )
 
     async def generate_report(self, analysis_result_dict: dict) -> str:

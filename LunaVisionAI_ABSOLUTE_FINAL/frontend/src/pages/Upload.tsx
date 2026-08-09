@@ -117,11 +117,11 @@ export default function UploadPage() {
       return;
     }
 
-    setIsAnalyzing(true);
-    setProgressStep(0);
-    
+    const compressToast = toast.loading('Optimizing image for fast transmission...');
     try {
       const compressedFile = await compressImage(file);
+      toast.dismiss(compressToast);
+      
       const formData = new FormData();
       formData.append('file', compressedFile);
 
