@@ -2,6 +2,7 @@ from fastapi import APIRouter, File, UploadFile, HTTPException
 from models.schemas import AnalysisResult, ChatRequest, ChatResponse, ReportRequest, HealthResponse, PlanRouteRequest, PlanRouteResponse
 from services.vision import process_lunar_image, plan_routes
 from services.ai import openrouter_client
+import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 
@@ -13,6 +14,21 @@ router = APIRouter()
 async def health_check():
     key_exists = bool(os.getenv("GEMINI_API_KEY"))
     return HealthResponse(status="OK", ai_available=key_exists)
+
+@router.get("/test-models")
+async def test_models():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return {"error": "No GEMINI_API_KEY found"}
+    try:
+        genai.configure(api_key=api_key)
+        models = []
+        for m in genai.list_models():
+            if "generateContent" in m.supported_generation_methods:
+                models.append(m.name)
+        return {"available_models": models}
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.post("/analyse", response_model=AnalysisResult)
 async def analyse_image(file: UploadFile = File(...)):
