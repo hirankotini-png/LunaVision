@@ -1,73 +1,36 @@
 import os
 import time
 import asyncio
-import httpx
 from typing import List, Optional
+import google.generativeai as genai
 from models.schemas import ChatMessage
 
 # Model constants — using free-tier model
-TEXT_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
-VISION_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
+TEXT_MODEL = "gemini-1.5-flash"
+VISION_MODEL = "gemini-1.5-flash"
 
-class OpenRouterClient:
+class GeminiClient:
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(OpenRouterClient, cls).__new__(cls)
-            cls._instance.client = httpx.AsyncClient()
+            cls._instance = super(GeminiClient, cls).__new__(cls)
+            api_key = os.getenv("GEMINI_API_KEY")
+            if api_key:
+                genai.configure(api_key=api_key)
         return cls._instance
 
-    async def _call_api(self, messages: list, model: str = TEXT_MODEL) -> str:
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        if not api_key:
-            print(f"[{time.strftime('%X')}] OpenRouter: No API key found. Falling back.", flush=True)
-            return None  # Handled by fallback in caller
-
-        url = "https://openrouter.ai/api/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:5173",
-            "X-Title": "LunaVision AI"
-        }
-
-        payload = {
-            "model": model,
-            "messages": messages
-        }
-
-        start_time = time.time()
-        print(f"[{time.strftime('%X')}] OpenRouter request started. Model: {model}", flush=True)
-
-        # 1 automatic retry
-        for attempt in range(2):
-            try:
-                response = await self.client.post(url, headers=headers, json=payload, timeout=60.0)
-                response.raise_for_status()
-                data = response.json()
-
-                duration = time.time() - start_time
-                print(f"[{time.strftime('%X')}] OpenRouter request SUCCESS in {duration:.2f}s", flush=True)
-                return data["choices"][0]["message"]["content"]
-            except httpx.HTTPStatusError as exc:
-                err_msg = f"API Error {exc.response.status_code}: {exc.response.reason_phrase}"
-                if attempt == 0:
-                    print(f"[{time.strftime('%X')}] OpenRouter request FAILED (Attempt 1). Retrying in 3s... Error: {err_msg}", flush=True)
-                    await asyncio.sleep(3)
-                else:
-                    print(f"[{time.strftime('%X')}] OpenRouter request FAILED in {time.time() - start_time:.2f}s. Error: {err_msg}", flush=True)
-                    return f"ERROR: {err_msg}"
-            except Exception as e:
-                if attempt == 0:
-                    print(f"[{time.strftime('%X')}] OpenRouter request FAILED (Attempt 1). Retrying in 3s... Error: {e}", flush=True)
-                    await asyncio.sleep(3)
-                else:
-                    duration = time.time() - start_time
-                    print(f"[{time.strftime('%X')}] OpenRouter request FAILED in {duration:.2f}s. Error: {e}", flush=True)
-                    return f"ERROR: Connection Failed ({e})"
-
     async def generate_analysis_reasoning(self, image_base64_data: str, metrics: dict) -> str:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return (
+                f"Deterministic analysis computed: {metrics.get('hazard_coverage', 'N/A')}% hazard coverage detected "
+                f"via edge density, shadow mapping, and slope estimation. "
+                f"Crater count: {metrics.get('crater_count', 0)}. "
+                f"Terrain roughness index: {metrics.get('roughness_score', 'N/A')}%. "
+                f"3 viable A* navigation paths (Optimal, Energy Efficient, Fastest) have been plotted. (Please add GEMINI_API_KEY to .env to enable AI reasoning)"
+            )
+            
         prompt = (
             "You are LunaVision AI, a NASA/ISRO mission-control analyst.\n"
             "Based on the following deterministic computer-vision metrics from a lunar surface scan, "
@@ -80,10 +43,14 @@ class OpenRouterClient:
             "and a quick overview of the 3 generated navigation routes (Optimal, Energy Efficient, Fastest). Keep it under 150 words."
         )
 
-        messages = [{"role": "user", "content": prompt}]
-
-        result = await self._call_api(messages, model=VISION_MODEL)
-        if result and result.startswith("ERROR:"):
+        try:
+            model = genai.GenerativeModel(VISION_MODEL)
+            # Send text prompt. Note: For Gemini, sending the image as base64 requires decoding and passing as dict. 
+            # We skip the image here since the prompt already contains the metrics needed for reasoning.
+            response = await model.generate_content_async([prompt])
+            return response.text
+        except Exception as e:
+            print(f"[{time.strftime('%X')}] Gemini request FAILED. Error: {e}", flush=True)
             return (
                 f"Deterministic analysis computed: {metrics.get('hazard_coverage', 'N/A')}% hazard coverage detected "
                 f"via edge density, shadow mapping, and slope estimation. "
@@ -91,9 +58,16 @@ class OpenRouterClient:
                 f"Terrain roughness index: {metrics.get('roughness_score', 'N/A')}%. "
                 f"3 viable A* navigation paths (Optimal, Energy Efficient, Fastest) have been plotted."
             )
-        return result
 
     async def chat(self, user_messages: List[ChatMessage], context: Optional[dict] = None) -> str:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return (
+                "Mission Control Acknowledged. We are currently experiencing high latency with the deep-space communications network. "
+                "However, our deterministic telemetry confirms the landing zone safety parameters are within acceptable thresholds. "
+                "Please proceed with the mission plan or retry your transmission shortly. (Requires GEMINI_API_KEY in .env)"
+            )
+            
         system_prompt = (
             "You are LunaVision AI, a NASA/ISRO style mission-control AI assistant. "
             "You help analyze lunar surfaces and explain mission readiness to planners. "
@@ -102,20 +76,27 @@ class OpenRouterClient:
         if context:
             system_prompt += f"\n\nCurrent Mission Context: {context}"
 
-        formatted_msgs = [{"role": "system", "content": system_prompt}]
+        formatted_msgs = []
         for msg in user_messages:
-            formatted_msgs.append({"role": msg.role, "content": msg.content})
+            formatted_msgs.append({"role": "user" if msg.role == "user" else "model", "parts": [msg.content]})
 
-        result = await self._call_api(formatted_msgs, model=TEXT_MODEL)
-        if result and result.startswith("ERROR:"):
+        try:
+            model = genai.GenerativeModel(TEXT_MODEL, system_instruction=system_prompt)
+            response = await model.generate_content_async(formatted_msgs)
+            return response.text
+        except Exception as e:
+            print(f"[{time.strftime('%X')}] Gemini request FAILED. Error: {e}", flush=True)
             return (
                 "Mission Control Acknowledged. We are currently experiencing high latency with the deep-space communications network. "
                 "However, our deterministic telemetry confirms the landing zone safety parameters are within acceptable thresholds. "
                 "Please proceed with the mission plan or retry your transmission shortly."
             )
-        return result
 
     async def generate_report(self, analysis_result_dict: dict) -> str:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return f"# Mission Report\n\nAI generation unavailable (Missing API Key). Fallback report:\n\n" + str(analysis_result_dict)
+            
         prompt = (
             "Generate a formal NASA-style mission readiness report in markdown format. "
             "Include the following sections EXACTLY:\n"
@@ -132,12 +113,13 @@ class OpenRouterClient:
             "11. Overall Mission Status\n\n"
             f"Analysis Data:\n{analysis_result_dict}"
         )
-        messages = [{"role": "user", "content": prompt}]
+        try:
+            model = genai.GenerativeModel(TEXT_MODEL)
+            response = await model.generate_content_async(prompt)
+            return response.text
+        except Exception as e:
+            print(f"[{time.strftime('%X')}] Gemini request FAILED. Error: {e}", flush=True)
+            return f"# Mission Report\n\nAI generation unavailable. Fallback report:\n\n" + str(analysis_result_dict)
 
-        result = await self._call_api(messages, model=TEXT_MODEL)
-        if result and result.startswith("ERROR:"):
-            return f"# Mission Report\n\nAI generation unavailable ({result}). Fallback report:\n\n" + str(analysis_result_dict)
-        return result
 
-
-openrouter_client = OpenRouterClient()
+openrouter_client = GeminiClient()
