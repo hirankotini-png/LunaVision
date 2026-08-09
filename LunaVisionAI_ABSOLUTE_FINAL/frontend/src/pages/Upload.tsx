@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileImage, Zap } from 'lucide-react';
 import axios from 'axios';
 import { useMission } from '../context/MissionContext';
+import toast from 'react-hot-toast';
 
 const PROGRESS_STEPS = [
   "Uplinking Imagery",
@@ -85,7 +86,7 @@ export default function UploadPage() {
       navigate('/analysis');
     } catch (error) {
       console.error('>>> Analysis failed with error:', error);
-      alert('Failed to analyze image. Ensure backend is running.');
+      toast.error('Failed to analyze image. Ensure backend is running.');
       setIsAnalyzing(false);
     }
   };

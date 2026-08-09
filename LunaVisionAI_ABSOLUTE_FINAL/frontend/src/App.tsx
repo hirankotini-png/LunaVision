@@ -5,6 +5,8 @@ import { MissionProvider } from './context/MissionContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Loader2 } from 'lucide-react';
 
+import { Toaster } from 'react-hot-toast';
+
 const Home = React.lazy(() => import('./pages/Home'));
 const Upload = React.lazy(() => import('./pages/Upload'));
 const Analysis = React.lazy(() => import('./pages/Analysis'));
@@ -23,6 +25,13 @@ function App() {
     <ThemeProvider>
       <MissionProvider>
         <Router>
+          <Toaster position="top-right" toastOptions={{
+            style: {
+              background: 'var(--bg-base)',
+              color: 'var(--text-base)',
+              border: '1px solid var(--glass-border)'
+            }
+          }} />
           <Layout>
             <Suspense fallback={<PageLoader />}>
               <Routes>

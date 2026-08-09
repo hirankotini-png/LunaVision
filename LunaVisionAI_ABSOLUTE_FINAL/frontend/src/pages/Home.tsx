@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, ShieldCheck, Cpu, UploadCloud, ChevronRight } from 'lucide-react';
+import { Activity, ShieldCheck, Cpu, UploadCloud, ChevronRight, Share2 } from 'lucide-react';
 import { useMission } from '../context/MissionContext';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 export default function Home() {
   const { analysisResult } = useMission();
@@ -27,6 +28,11 @@ export default function Home() {
   const itemAnim = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied to clipboard!");
   };
 
   return (
@@ -83,6 +89,9 @@ export default function Home() {
                 <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform text-gray-400" />
               </Link>
             )}
+            <button onClick={handleShare} className="glass-panel group flex items-center justify-center gap-3 w-14 h-14 rounded-2xl hover:bg-white/10 transition-all" title="Share link">
+              <Share2 size={20} className="text-gray-400 group-hover:text-white transition-colors" />
+            </button>
           </div>
         </motion.div>
       </div>

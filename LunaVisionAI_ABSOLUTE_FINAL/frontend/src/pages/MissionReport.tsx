@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Download, ChevronLeft, ShieldAlert, Target, Activity, CheckCircle, Info, Stethoscope, Camera, Volume2, VolumeX, User, Clock, HeartPulse, BrainCircuit, FileText } from 'lucide-react';
+import { Download, ChevronLeft, ShieldAlert, Target, Activity, CheckCircle, Info, Stethoscope, Camera, Volume2, VolumeX, User, Clock, HeartPulse, BrainCircuit, FileText, Database } from 'lucide-react';
 import { useMission } from '../context/MissionContext';
 import html2pdf from 'html2pdf.js';
+import toast from 'react-hot-toast';
 import { 
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
@@ -63,6 +64,21 @@ export default function MissionReport() {
       console.error("Export failed", err);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const exportJSON = () => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(analysisResult, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `analysis_data_${analysisResult.session_id.substring(0,8)}.json`);
+      document.body.appendChild(downloadAnchorNode); 
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+      toast.success("JSON data exported successfully.");
+    } catch (err) {
+      toast.error("Failed to export JSON.");
     }
   };
 
@@ -140,6 +156,15 @@ export default function MissionReport() {
             title="Read Report Aloud"
           >
             {isSpeaking ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
+
+          <button 
+            onClick={exportJSON} 
+            className="premium-btn flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all hover:scale-105 bg-[var(--color-secondary)]/20 text-[var(--text-base)] border border-[var(--color-secondary)]/50 justify-center"
+            title="Export Raw JSON"
+          >
+            <Database size={18} className="text-[var(--color-secondary)]" />
+            <span className="hidden sm:inline">JSON</span>
           </button>
 
           <button 

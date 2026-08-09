@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, AlertTriangle, Crosshair, ShieldAlert, Loader2, Target, CheckCircle, Info, Sliders, Image as ImageIcon, ZoomIn } from 'lucide-react';
+import { Activity, AlertTriangle, Crosshair, ShieldAlert, Loader2, Target, CheckCircle, Info, Sliders, Image as ImageIcon, ZoomIn, Upload } from 'lucide-react';
 import { useMission } from '../context/MissionContext';
+import toast from 'react-hot-toast';
 
 export default function Analysis() {
   const { analysisResult, setAnalysisResult, targetCoordinate, setTargetCoordinate } = useMission();
@@ -17,6 +18,7 @@ export default function Analysis() {
   const [compareMode, setCompareMode] = useState(false);
   const [comparePosition, setComparePosition] = useState(50);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [compareImage, setCompareImage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Scan Quality Mock Metrics (Derived deterministically from safety_score if available)
@@ -26,7 +28,7 @@ export default function Analysis() {
     return {
       blur: Math.min(100, Math.max(0, 100 - (baseScore * 0.8))),
       brightness: 85 + (baseScore % 10),
-      contrast: 90 - (baseScore % 5),
+      contrast: 90 + (baseScore % 5),
       noise: Math.min(100, Math.max(0, 15 + (baseScore % 20))),
       rating: baseScore > 80 ? 'Excellent' : baseScore > 50 ? 'Acceptable' : 'Poor',
       retake: baseScore < 50
@@ -61,14 +63,38 @@ export default function Analysis() {
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
+    const imgElement = e.currentTarget.querySelector('img') as HTMLImageElement;
+    if (!imgElement) return;
+
+    const natW = imgElement.naturalWidth || 512;
+    const natH = imgElement.naturalHeight || 512;
+    
+    const imgAspect = natW / natH;
+    const rectAspect = rect.width / rect.height;
+    
+    let scale;
+    if (rectAspect > imgAspect) {
+        scale = rect.height / natH;
+    } else {
+        scale = rect.width / natW;
+    }
+    
+    const renderedWidth = natW * scale;
+    const renderedHeight = natH * scale;
+    const xOffset = (rect.width - renderedWidth) / 2;
+    const yOffset = (rect.height - renderedHeight) / 2;
+    
+    if (clickX < xOffset || clickX > xOffset + renderedWidth || clickY < yOffset || clickY > yOffset + renderedHeight) {
+      return;
+    }
+
+    const originalX = Math.round((clickX - xOffset) / scale);
+    const originalY = Math.round((clickY - yOffset) / scale);
+
     setMarkerPos({ 
       x: (clickX / rect.width) * 100, 
       y: (clickY / rect.height) * 100 
     });
-
-    // Approximate original coordinates for backend compatibility
-    const originalX = Math.round((clickX / rect.width) * 512);
-    const originalY = Math.round((clickY / rect.height) * 512);
 
     setTargetCoordinate({ x: originalX, y: originalY });
     
@@ -86,14 +112,16 @@ export default function Analysis() {
   };
 
   const handleGenerateMission = async () => {
-    if (!targetCoordinate || isPlanning) return;
+    if (!analysisResult || !targetCoordinate || isPlanning) return;
     
     setIsPlanning(true);
     setLoadingText("Analyzing Tissue Pathways...");
+    setPlanningError(null);
 
     try {
-      setTimeout(() => setLoadingText("Generating Treatment Options..."), 400);
-      setTimeout(() => setLoadingText("Finalizing Diagnostic Report..."), 800);
+      // Create a small visual delay for UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setLoadingText("Generating Treatment Options...");
       
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiUrl}/api/plan_routes`, {
@@ -109,20 +137,39 @@ export default function Analysis() {
       if (!response.ok) {
         const err = await response.json();
         setPlanningError(err.detail || 'Failed to generate diagnostics');
+        toast.error(err.detail || 'Failed to generate diagnostics');
         setIsPlanning(false);
         setMarkerPos(null);
         setTargetCoordinate(null);
         return;
       }
 
+      setLoadingText("Finalizing Diagnostic Report...");
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
       const data = await response.json();
       setAnalysisResult({ ...analysisResult, routes: data.routes, analysis_explanation: data.analysis_explanation });
+      toast.success("Diagnostic pathways successfully generated.");
     } catch (err) {
       setPlanningError("Network error calculating diagnostics.");
+      toast.error("Network error calculating diagnostics.");
       setMarkerPos(null);
       setTargetCoordinate(null);
     } finally {
       setIsPlanning(false);
+    }
+  };
+
+  const handleCompareUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCompareImage(event.target?.result as string);
+        setCompareMode(true);
+        toast.success("Comparison scan loaded.");
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -186,9 +233,16 @@ export default function Analysis() {
                 onClick={() => setCompareMode(!compareMode)}
                 className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all flex-1 sm:flex-none justify-center ${compareMode ? 'bg-[var(--color-primary)] text-white' : 'bg-black/10 dark:bg-white/5 hover:bg-black/20 dark:hover:bg-white/10'}`}
               >
-                <ImageIcon size={16} /> <span className="whitespace-nowrap">Compare Mode</span>
+                <ImageIcon size={16} /> <span className="whitespace-nowrap">{compareImage ? 'Toggle Compare' : 'Compare Mode'}</span>
               </button>
               
+              {!compareImage && (
+                <label className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all flex-1 sm:flex-none justify-center bg-black/10 dark:bg-white/5 hover:bg-black/20 dark:hover:bg-white/10 cursor-pointer">
+                  <Upload size={16} /> <span className="whitespace-nowrap">Load Scan B</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleCompareUpload} />
+                </label>
+              )}
+
               {!compareMode && (
                 <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 px-3 py-2 rounded-xl flex-1 sm:flex-none justify-between">
                   <Sliders size={16} className="text-gray-500 hidden sm:block" />
@@ -237,7 +291,7 @@ export default function Analysis() {
                 
                 {/* Original Image Layer */}
                 <img 
-                  src={analysisResult.original_image_base64} 
+                  src={compareImage || analysisResult.original_image_base64} 
                   alt="Original Scan" 
                   className="absolute max-h-full max-w-full object-contain"
                 />
@@ -247,7 +301,8 @@ export default function Analysis() {
                   className="absolute inset-0 flex items-center justify-center"
                   style={{ 
                     clipPath: compareMode ? `polygon(0 0, ${comparePosition}% 0, ${comparePosition}% 100%, 0 100%)` : 'none',
-                    opacity: compareMode ? 1 : heatmapOpacity / 100
+                    opacity: compareMode ? 1 : heatmapOpacity / 100,
+                    mixBlendMode: compareMode ? 'normal' : 'hard-light'
                   }}
                 >
                   <img 

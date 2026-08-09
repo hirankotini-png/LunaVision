@@ -55,7 +55,7 @@ export default function ReportHistory({ isOpen, onClose }: { isOpen: boolean; on
             <div className="p-6 border-b border-[var(--glass-border)] flex items-center justify-between bg-black/5 dark:bg-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <Clock className="text-[var(--color-primary)]" size={24} />
-                <h2 className="text-lg font-bold uppercase tracking-widest">Medical History</h2>
+                <h2 className="text-lg font-bold uppercase tracking-widest">Analysis History</h2>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors">
                 <X size={20} />

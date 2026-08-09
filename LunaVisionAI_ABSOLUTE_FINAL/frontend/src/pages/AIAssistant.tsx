@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, ShieldAlert, Activity, Target, CheckCircle, AlertTriangle, Stethoscope, BrainCircuit } from 'lucide-react';
 import axios from 'axios';
 import { useMission } from '../context/MissionContext';
+import toast from 'react-hot-toast';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -50,6 +51,7 @@ export default function AIAssistant() {
       setMessages(prev => [...prev, { role: 'assistant', content: response.data.reply }]);
     } catch (error) {
       console.error('Chat error', error);
+      toast.error('COMMUNICATION LINK DEGRADED. System unable to reach Medical Core.');
       setMessages(prev => [...prev, { role: 'assistant', content: 'COMMUNICATION LINK DEGRADED. System unable to reach Medical Core. Please verify network status.' }]);
     } finally {
       setIsLoading(false);

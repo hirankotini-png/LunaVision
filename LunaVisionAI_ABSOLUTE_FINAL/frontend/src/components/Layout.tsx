@@ -3,15 +3,36 @@ import type { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import { MessageSquare, History, Moon, Sun } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ReportHistory from './ReportHistory';
 import { useTheme } from '../context/ThemeContext';
+import { useEffect } from 'react';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isAIPage = location.pathname === '/ai';
   const { theme, toggleTheme } = useTheme();
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input or textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === '/') {
+        e.preventDefault();
+        navigate('/upload');
+      } else if (e.key.toLowerCase() === 'n') {
+        navigate('/analysis');
+      }
+      // 'P' for export is handled in MissionReport.tsx where the export logic resides.
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-base)] flex font-sans relative overflow-hidden transition-colors duration-300">
@@ -52,10 +73,17 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Floating Chat Assistant Button (hidden on /ai page) */}
       {!isAIPage && (
         <div className="fixed bottom-24 right-4 md:bottom-10 md:right-10 z-50 flex flex-col gap-4">
-          <button onClick={() => setIsHistoryOpen(true)} className="p-4 bg-white/10 backdrop-blur-md border border-[var(--glass-border)] text-[var(--text-base)] rounded-full shadow-lg hover:bg-white/20 hover:scale-110 transition-all duration-300 group hidden md:block">
+          <button 
+            onClick={toggleTheme} 
+            className="p-4 bg-white/10 backdrop-blur-md border border-[var(--glass-border)] text-[var(--text-base)] rounded-full shadow-lg hover:bg-white/20 hover:scale-110 transition-all duration-300 group hidden md:flex items-center justify-center"
+            title="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun size={24} className="group-hover:text-yellow-400 transition-colors" /> : <Moon size={24} className="group-hover:text-gray-500 transition-colors" />}
+          </button>
+          <button onClick={() => setIsHistoryOpen(true)} className="p-4 bg-white/10 backdrop-blur-md border border-[var(--glass-border)] text-[var(--text-base)] rounded-full shadow-lg hover:bg-white/20 hover:scale-110 transition-all duration-300 group hidden md:block" title="Analysis History">
             <History size={24} className="group-hover:text-[var(--color-primary)] transition-colors" />
           </button>
-          <Link to="/ai" className="p-4 bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:shadow-[0_0_20px_var(--color-primary)] hover:scale-110 transition-all duration-300 group">
+          <Link to="/ai" className="p-4 bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:shadow-[0_0_20px_var(--color-primary)] hover:scale-110 transition-all duration-300 group" title="AI Assistant">
             <MessageSquare size={24} className="group-hover:animate-pulse" />
           </Link>
         </div>

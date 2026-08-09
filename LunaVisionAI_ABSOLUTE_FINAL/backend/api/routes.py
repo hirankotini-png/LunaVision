@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
-    key_exists = bool(os.getenv("OPENROUTER_API_KEY"))
+    key_exists = bool(os.getenv("GEMINI_API_KEY"))
     return HealthResponse(status="OK", ai_available=key_exists)
 
 @router.post("/analyse", response_model=AnalysisResult)
